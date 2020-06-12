@@ -1,9 +1,9 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::Error;
+use crate::{constants, error::Error, layout::Layout};
 use libra_config::config::{self, GitHubConfig, OnDiskStorageConfig, Token, VaultConfig};
-use libra_secure_storage::BoxedStorage;
+use libra_secure_storage::{BoxedStorage, KVStorage};
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -30,6 +30,19 @@ pub struct SecureBackend {
 
 impl SecureBackend {
     const BACKEND: &'static str = "backend";
+
+    pub fn into_layout(mut self) -> Result<Layout, Error> {
+        self.parameters
+            .insert("namespace".into(), constants::COMMON_NS.into());
+        let common: BoxedStorage = self.try_into()?;
+
+        let layout = common
+            .get(constants::LAYOUT)
+            .and_then(|v| v.value.string())
+            .map_err(|e| Error::RemoteStorageReadError(constants::LAYOUT, e.to_string()))?;
+        Layout::parse(&layout)
+            .map_err(|e| Error::RemoteStorageReadError(constants::LAYOUT, e.to_string()))
+    }
 }
 
 impl FromStr for SecureBackend {

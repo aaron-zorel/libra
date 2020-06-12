@@ -68,18 +68,7 @@ impl Genesis {
 
     /// Retrieves a layout from the remote storage.
     pub fn layout(&self) -> Result<Layout, Error> {
-        let mut common_config = self.backend.backend.clone();
-        common_config
-            .parameters
-            .insert("namespace".into(), constants::COMMON_NS.into());
-        let common: BoxedStorage = common_config.try_into()?;
-
-        let layout = common
-            .get(constants::LAYOUT)
-            .and_then(|v| v.value.string())
-            .map_err(|e| Error::RemoteStorageReadError(constants::LAYOUT, e.to_string()))?;
-        Layout::parse(&layout)
-            .map_err(|e| Error::RemoteStorageReadError(constants::LAYOUT, e.to_string()))
+        self.backend.backend.clone().into_layout()
     }
 
     /// Produces a set of ValidatorRegistration from the remote storage.
